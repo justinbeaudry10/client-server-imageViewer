@@ -1,21 +1,53 @@
-
-// You may need to add some delectation here
+const HEADER_SIZE = 12;
 
 module.exports = {
+  resPktHeader: "",
+  payload: "",
+  payloadSize: 0,
 
-    init: function () { // feel free to add function parameters as needed
-        //
-        // enter your code here
-        //
-    },
+  init: function (resType, seqNum, timestamp, img, imgSize) {
+    // feel free to add function parameters as needed
+    let v = 7;
 
-    //--------------------------
-    //getpacket: returns the entire packet
-    //--------------------------
-    getPacket: function () {
-        // enter your code here
-        return "this should be a correct packet";
+    this.payload = new Buffer.alloc(imgSize);
+    this.payloadSize = imgSize;
+
+    // Populating header
+    this.resPktHeader = new Buffer.alloc(HEADER_SIZE);
+    storeBitPacket(this.resPktHeader, v, 0, 4);
+    storeBitPacket(this.resPktHeader, resType, 4, 8);
+    storeBitPacket(this.resPktHeader, seqNum, 12, 20);
+    storeBitPacket(this.resPktHeader, timestamp, 32, 32);
+    storeBitPacket(this.resPktHeader, imgSize, 64, 32);
+
+    // If found, set the payload data to the img
+    if (resType === 1) {
+      for (let i = 0; i < imgSize; i++) {
+        this.payload[i] = img[i];
+      }
+    } else if (resType === 2) {
+      // If not found, set payload data to 0s
+      for (let i = 0; i < imgSize; i++) {
+        this.payload[i] = 0;
+      }
     }
+  },
+
+  //--------------------------
+  //getpacket: returns the entire packet
+  //--------------------------
+  getPacket: function () {
+    let packet = new Buffer.alloc(HEADER_SIZE + this.payloadSize);
+
+    for (let i = 0; i < HEADER_SIZE; i++) {
+      packet[i] = this.resPktHeader[i];
+    }
+    for (let j = 0; j < HEADER_SIZE; j++) {
+      packet[HEADER_SIZE + j] = this.payload[j];
+    }
+
+    return packet;
+  },
 };
 
 //// Some usefull methods ////
@@ -23,18 +55,18 @@ module.exports = {
 
 // Store integer value into specific bit poistion the packet
 function storeBitPacket(packet, value, offset, length) {
-    // let us get the actual byte position of the offset
-    let lastBitPosition = offset + length - 1;
-    let number = value.toString(2);
-    let j = number.length - 1;
-    for (var i = 0; i < number.length; i++) {
-        let bytePosition = Math.floor(lastBitPosition / 8);
-        let bitPosition = 7 - (lastBitPosition % 8);
-        if (number.charAt(j--) == "0") {
-            packet[bytePosition] &= ~(1 << bitPosition);
-        } else {
-            packet[bytePosition] |= 1 << bitPosition;
-        }
-        lastBitPosition--;
+  // let us get the actual byte position of the offset
+  let lastBitPosition = offset + length - 1;
+  let number = value.toString(2);
+  let j = number.length - 1;
+  for (var i = 0; i < number.length; i++) {
+    let bytePosition = Math.floor(lastBitPosition / 8);
+    let bitPosition = 7 - (lastBitPosition % 8);
+    if (number.charAt(j--) == "0") {
+      packet[bytePosition] &= ~(1 << bitPosition);
+    } else {
+      packet[bytePosition] |= 1 << bitPosition;
     }
+    lastBitPosition--;
+  }
 }

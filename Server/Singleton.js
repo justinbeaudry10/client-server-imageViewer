@@ -1,34 +1,31 @@
 // Declares a variable for the timestamp value
-let timestamp;
+let timestamp, seqNum;
+const MS_PER_TICK = 10;
 
-function initTimer() {
-  // Initial value from 1 to 999
-  timestamp = Math.floor(Math.random() * 999 + 1);
-
-  // Ticks every 10 ms
-  setInterval(incTimestamp, 10);
-}
-
-// Increments timestamp by 1 for each tick, resets at 2^32
-function incTimestamp() {
-  timestamp++;
-  if (timestamp >= Math.pow(2, 32)) {
-    timestamp = 1;
-  }
-  //console.log(timestamp);
-}
+// Returns randon number from 1 to 999
+const getRandNum = () => {
+  return Math.floor(Math.random() * 999 + 1);
+};
 
 module.exports = {
   init: function () {
-    initTimer();
+    timestamp = getRandNum();
+    seqNum = getRandNum();
+
+    // Tick callback fn called every MS_PER_TICK milliseconds
+    setInterval(() => {
+      timestamp++;
+      if (timestamp >= Math.pow(2, 32)) {
+        timestamp = 1;
+      }
+    }, MS_PER_TICK);
   },
 
   //--------------------------
   //getSequenceNumber: return the current sequence number + 1
   //--------------------------
   getSequenceNumber: function () {
-    // Enter your code here //
-    return "this should be a correct sequence number";
+    return ++seqNum % Math.pow(2, 20);
   },
 
   //--------------------------
