@@ -63,7 +63,19 @@ module.exports = {
           --Image file extension(s): ${fileExt}
           --Image file name: ${fileName}`);
 
-      getImage(fileName, fileExt, sock);
+      if (version == 7) getImage(fileName, fileExt, sock);
+      else {
+        ITPpacket.init(
+          2,
+          singleton.getSequenceNumber(),
+          singleton.getTimestamp(),
+          0,
+          0
+        );
+        //Initiate socket connection to send empty file
+        sock.write(ITPpacket.getPacket());
+        sock.end();
+      }
     });
 
     // Close the connection
