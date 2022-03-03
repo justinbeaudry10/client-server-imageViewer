@@ -3,14 +3,14 @@ let timestamp, seqNum;
 const MS_PER_TICK = 10;
 
 // Returns randon number from 1 to 999
-const getRandNum = () => {
-  return Math.floor(Math.random() * 999 + 1);
+const getRandNum = (max) => {
+  return Math.floor(Math.random() * max + 1);
 };
 
 module.exports = {
   init: function () {
-    timestamp = getRandNum();
-    seqNum = getRandNum();
+    timestamp = getRandNum(999);
+    seqNum = getRandNum(Math.pow(2, 20) - 1);
 
     // Tick callback fn called every MS_PER_TICK milliseconds
     setInterval(() => {

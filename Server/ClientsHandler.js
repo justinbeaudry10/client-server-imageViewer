@@ -87,19 +87,18 @@ module.exports = {
 
 const getImage = (fileName, ext, sock) => {
   fs.readFile(`images/${fileName}.${ext.toLowerCase()}`, (err, data) => {
-    const filePartitions = [];
+    let file;
     if (!err) {
       //Creating a readstream containing the file
-      var readFile = fs.createReadStream(
+      let readFile = fs.createReadStream(
         `images/${fileName}.${ext.toLowerCase()}`
       );
-      //If there is no error in reading the file, put the file partitions into the array
-      readFile.on("data", function (partition) {
-        filePartitions.push(partition);
+
+      readFile.on("data", function (packet) {
+        file = packet;
       });
       //Concatonate the file parts and send the ITPResponse backet the needed information fields
       readFile.on("close", function () {
-        let file = Buffer.concat(filePartitions);
         //Sending the request type as 1 to indicate that the file has been found
         ITPpacket.init(
           1,
