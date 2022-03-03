@@ -1,4 +1,5 @@
 const HEADER_SIZE = 12;
+const VERSION = 7;
 
 module.exports = {
   resPktHeader: "",
@@ -6,15 +7,12 @@ module.exports = {
   payloadSize: 0,
 
   init: function (resType, seqNum, timestamp, img, imgSize) {
-    // feel free to add function parameters as needed
-    let v = 7;
-
     this.payload = new Buffer.alloc(imgSize);
     this.payloadSize = imgSize;
 
     // Populating header
     this.resPktHeader = new Buffer.alloc(HEADER_SIZE);
-    storeBitPacket(this.resPktHeader, v, 0, 4);
+    storeBitPacket(this.resPktHeader, VERSION, 0, 4);
     storeBitPacket(this.resPktHeader, resType, 4, 8);
     storeBitPacket(this.resPktHeader, seqNum, 12, 20);
     storeBitPacket(this.resPktHeader, timestamp, 32, 32);

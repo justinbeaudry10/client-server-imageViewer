@@ -1,19 +1,67 @@
 // You may need to add some delectation here
+const HEADER_SIZE = 12;
+const REQ_TYPE = 0;
 
 module.exports = {
-  init: function () {
-    // feel free to add function parameters as needed
-    //
-    // enter your code here
-    //
+  reqPktHeader: "",
+  payload: "",
+  payloadSize: 0,
+
+  init: function (version, timestamp, imgExt, imgName) {
+    let imgNameBytes = stringToBytes(imgName);
+    this.payloadSize = imgNameBytes.length;
+
+    let imgType;
+
+    switch (imgExt) {
+      case "bmp":
+        imgType = 1;
+        break;
+      case "jpeg":
+        imgType = 2;
+        break;
+      case "gif":
+        imgType = 3;
+        break;
+      case "png":
+        imgType = 4;
+        break;
+      case "tiff":
+        imgType = 5;
+        break;
+      case "raw":
+        imgType = 15;
+        break;
+    }
+
+    // Populating header
+    this.reqPktHeader = new Buffer.alloc(HEADER_SIZE);
+    storeBitPacket(this.reqPktHeader, version, 0, 4);
+    storeBitPacket(this.reqPktHeader, REQ_TYPE, 24, 8);
+    storeBitPacket(this.reqPktHeader, timestamp, 32, 32);
+    storeBitPacket(this.reqPktHeader, imgType, 64, 4);
+    storeBitPacket(this.reqPktHeader, this.payloadSize, 68, 28);
+
+    this.payload = new Buffer.alloc(this.payloadSize);
+    for (let i = 0; i < imgNameBytes.length; i++) {
+      this.payload[i] = imgNameBytes[i];
+    }
   },
 
   //--------------------------
   //getBytePacket: returns the entire packet in bytes
   //--------------------------
   getBytePacket: function () {
-    // enter your code here
-    return "this should be a correct packet";
+    let packet = new Buffer.alloc(HEADER_SIZE + this.payloadSize);
+
+    for (let i = 0; i < HEADER_SIZE; i++) {
+      packet[i] = this.reqPktHeader[i];
+    }
+    for (let j = 0; j < HEADER_SIZE; j++) {
+      packet[HEADER_SIZE + j] = this.payload[j];
+    }
+
+    return packet;
   },
 };
 
