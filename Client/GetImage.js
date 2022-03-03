@@ -2,41 +2,44 @@ const net = require("net");
 const fs = require("fs");
 const open = require("open");
 const ITPpacket = require("./ITPRequest");
+const MS_PER_TICK = 10;
 
 // process.argv parses command line arguments
-// Args: [nodePath, path, '-s', ip:port, '-q', fileName, '-v', version]
+// Args: [node, path, '-s', ip:port, '-q', fileName.ext, '-v', version]
 const [host, port] = process.argv[3].split(":");
-const [fileName, fileExt] = process.argv[5].split(".");
+const file = process.argv[5];
+const [fileName, fileExt] = file.split(".");
 const version = Number(process.argv[7]);
+let resPkt;
 
-ITPpacket.init(version, 0, fileExt, fileName);
+let timestamp = Math.floor(Math.random() * 999 + 1);
 
-let client = new net.Socket();
+ITPpacket.init(version, timestamp, fileExt, fileName);
 
-client.connect(port, host, () => {
+let sock = new net.Socket();
+
+sock.connect(port, host, () => {
   console.log("Connected to ImageDB server on: " + host + ":" + port);
-  client.write(ITPpacket.getBytePacket());
+  sock.write(ITPpacket.getBytePacket());
 });
 
-//Creating an array to hold all the partitions of the file
-const filePartitions = [];
-//When the client receives data, it splits the data into partitions
-client.on("data", (partition) => filePartitions.push(partition));
+// Getting the response packet from the server
+sock.on("data", (packet) => {
+  resPkt = packet;
+});
 
-client.on("end", () => {
-  const resPkt = Buffer.concat(filePartitions);
+sock.on("end", () => {
+  //const resPkt = Buffer.concat(filePartitions);
   let header = resPkt.slice(0, 12);
   let img = resPkt.slice(12);
   let resTypeInt = parseBitPacket(resPkt, 4, 8);
 
   if (resTypeInt === 1) {
-    let fullFileName = fileName + "." + fileExt;
-
-    fs.writeFile(fullFileName, img, "binary", (err) => {
+    fs.writeFile(file, img, "binary", (err) => {
       if (err) {
         console.log(err);
       } else {
-        open(fullFileName);
+        open(file);
       }
     });
   }
@@ -69,17 +72,17 @@ client.on("end", () => {
     --Sequence Number = ${resSeqNum}
     --Timestamp = ${resTimestamp}`);
 
-  client.end();
+  sock.end();
 });
 
-//Display when socket is disconnected
-client.on("end", () => {
+// When socket disconnects
+sock.on("end", () => {
   console.log("\nDisconnected from the server");
 });
 
-//Display when socket is closed
-client.on("close", function () {
-  console.log("\nConnection closed");
+// When socket closes
+sock.on("close", function () {
+  console.log("Connection closed");
 });
 
 //// Some usefull methods ////
