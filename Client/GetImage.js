@@ -25,10 +25,11 @@ client.on("data", (partition) => filePartitions.push(partition));
 
 client.on("end", () => {
   const resPkt = Buffer.concat(filePartitions);
+  let header = resPkt.slice(0, 12);
   let img = resPkt.slice(12);
-  let resType = parseBitPacket(resPkt, 4, 8);
+  let resTypeInt = parseBitPacket(resPkt, 4, 8);
 
-  if (resType === 1) {
+  if (resTypeInt === 1) {
     let fullFileName = fileName + "." + fileExt;
 
     fs.writeFile(fullFileName, img, "binary", (err) => {
@@ -39,16 +40,46 @@ client.on("end", () => {
       }
     });
   }
-});
 
-//Display when socket is closed
-client.on("close", function () {
-  console.log("\n Connection closed");
+  let resVersion = parseBitPacket(resPkt, 0, 4);
+  let resSeqNum = parseBitPacket(resPkt, 12, 20);
+  let resTimestamp = parseBitPacket(resPkt, 32, 32);
+
+  let resType;
+  switch (resTypeInt) {
+    case 0:
+      resType = "Query";
+      break;
+    case 1:
+      resType = "Found";
+      break;
+    case 2:
+      resType = "Not found";
+      break;
+    case 3:
+      resType = "Busy";
+      break;
+  }
+
+  console.log("ITP packet header received:");
+  printPacketBit(header);
+  console.log(`\nServer sent:
+    --ITP version = ${resVersion}
+    --Response Type = ${resType}
+    --Sequence Number = ${resSeqNum}
+    --Timestamp = ${resTimestamp}`);
+
+  client.end();
 });
 
 //Display when socket is disconnected
 client.on("end", () => {
-  console.log("\n Disconnected from the server");
+  console.log("\nDisconnected from the server");
+});
+
+//Display when socket is closed
+client.on("close", function () {
+  console.log("\nConnection closed");
 });
 
 //// Some usefull methods ////

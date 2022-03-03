@@ -40,7 +40,7 @@ module.exports = {
     for (let i = 0; i < HEADER_SIZE; i++) {
       packet[i] = this.resPktHeader[i];
     }
-    for (let j = 0; j < HEADER_SIZE; j++) {
+    for (let j = 0; j < this.payloadSize; j++) {
       packet[HEADER_SIZE + j] = this.payload[j];
     }
 
