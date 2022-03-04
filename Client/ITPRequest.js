@@ -8,6 +8,7 @@ module.exports = {
   payloadSize: 0,
 
   init: function (version, timestamp, imgExt, imgName) {
+    // Gets the image name in bytes, sets the payload size to its size
     let imgNameBytes = stringToBytes(imgName);
     this.payloadSize = imgNameBytes.length;
 
@@ -42,6 +43,7 @@ module.exports = {
     storeBitPacket(this.reqPktHeader, imgType, 64, 4);
     storeBitPacket(this.reqPktHeader, this.payloadSize, 68, 28);
 
+    // Populating payload
     this.payload = new Buffer.alloc(this.payloadSize);
     for (let i = 0; i < imgNameBytes.length; i++) {
       this.payload[i] = imgNameBytes[i];
@@ -52,12 +54,14 @@ module.exports = {
   //getBytePacket: returns the entire packet in bytes
   //--------------------------
   getBytePacket: function () {
+    // Packet size should be header size + payload size
     let packet = new Buffer.alloc(HEADER_SIZE + this.payloadSize);
 
+    // Populating the header
     for (let i = 0; i < HEADER_SIZE; i++) {
       packet[i] = this.reqPktHeader[i];
-    }
-    for (let j = 0; j < HEADER_SIZE; j++) {
+    } // Populating the payload
+    for (let j = 0; j < this.payloadSize; j++) {
       packet[HEADER_SIZE + j] = this.payload[j];
     }
 

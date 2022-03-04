@@ -12,12 +12,24 @@ const [fileName, fileExt] = file.split(".");
 const version = Number(process.argv[7]);
 let resPkt;
 
+// Initialize timestamp from 1-999
 let timestamp = Math.floor(Math.random() * 999 + 1);
 
+// Timer ticks every 10 ms
+const timer = setInterval(() => {
+  timestamp++;
+  if (timestamp >= Math.pow(2, 32)) {
+    timestamp = 1;
+  }
+}, 10);
+
+// Initialize a request packet
 ITPpacket.init(version, timestamp, fileExt, fileName);
 
+// Create a new socket
 let sock = new net.Socket();
 
+// Connect to the server
 sock.connect(port, host, () => {
   console.log("Connected to ImageDB server on: " + host + ":" + port);
   sock.write(ITPpacket.getBytePacket());
@@ -28,12 +40,16 @@ sock.on("data", (packet) => {
   resPkt = packet;
 });
 
+// When the socket is closed
 sock.on("end", () => {
-  //const resPkt = Buffer.concat(filePartitions);
+  // Stops the timer
+  clearInterval(timer);
+
   let header = resPkt.slice(0, 12);
   let img = resPkt.slice(12);
   let resTypeInt = parseBitPacket(resPkt, 4, 8);
 
+  // If the response type is 1 (Found), write the file to this folder and open it
   if (resTypeInt === 1) {
     fs.writeFile(file, img, "binary", (err) => {
       if (err) {
@@ -44,6 +60,7 @@ sock.on("end", () => {
     });
   }
 
+  // Getting values from the response packet to display in CLI
   let resVersion = parseBitPacket(resPkt, 0, 4);
   let resSeqNum = parseBitPacket(resPkt, 12, 20);
   let resTimestamp = parseBitPacket(resPkt, 32, 32);

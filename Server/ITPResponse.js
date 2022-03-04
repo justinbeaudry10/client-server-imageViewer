@@ -7,6 +7,7 @@ module.exports = {
   payloadSize: 0,
 
   init: function (resType, seqNum, timestamp, img, imgSize) {
+    // Setting the payload size
     this.payload = new Buffer.alloc(imgSize);
     this.payloadSize = imgSize;
 
@@ -35,11 +36,13 @@ module.exports = {
   //getpacket: returns the entire packet
   //--------------------------
   getPacket: function () {
+    // Packet size is Header size + payload size
     let packet = new Buffer.alloc(HEADER_SIZE + this.payloadSize);
 
+    // Populate the header
     for (let i = 0; i < HEADER_SIZE; i++) {
       packet[i] = this.resPktHeader[i];
-    }
+    } // Populate the payload
     for (let j = 0; j < this.payloadSize; j++) {
       packet[HEADER_SIZE + j] = this.payload[j];
     }

@@ -4,14 +4,17 @@ const fs = require("fs");
 
 module.exports = {
   handleClientJoining: function (sock) {
+    // Get current server timestamp
     let curTime = singleton.getTimestamp();
 
     console.log(`\nClient-${curTime} is connected at timestamp: ${curTime}`);
 
+    // When the socket recieves data
     sock.on("data", (reqPkt) => {
       console.log("ITP packet received:");
       printPacketBit(reqPkt);
 
+      // Getting values from the request packet
       let version = parseBitPacket(reqPkt, 0, 4); // Should be 7
       let reqTypeInt = parseBitPacket(reqPkt, 24, 8); // Always 0
       let timestamp = parseBitPacket(reqPkt, 32, 32);
@@ -63,6 +66,7 @@ module.exports = {
           --Image file extension(s): ${fileExt}
           --Image file name: ${fileName}`);
 
+      // If version 7, get the image, otherwise, send response packet with "Not found" type (2)
       if (version == 7) getImage(fileName, fileExt, sock);
       else {
         ITPpacket.init(
@@ -72,34 +76,37 @@ module.exports = {
           0,
           0
         );
-        //Initiate socket connection to send empty file
+
+        // Write the packet to the socket and close it
         sock.write(ITPpacket.getPacket());
         sock.end();
       }
     });
 
-    // Close the connection
+    // When the socket closes, print message
     sock.on("close", () => {
       console.log(`\nClient-${curTime} closed the connection`);
     });
   },
 };
 
+// Function to get the image
 const getImage = (fileName, ext, sock) => {
+  // Reads the file from the images folder
   fs.readFile(`images/${fileName}.${ext.toLowerCase()}`, (err, data) => {
     let file;
     if (!err) {
-      //Creating a readstream containing the file
-      let readFile = fs.createReadStream(
+      // Creating a readstream containing the file
+      let readStream = fs.createReadStream(
         `images/${fileName}.${ext.toLowerCase()}`
       );
 
-      readFile.on("data", function (packet) {
+      readStream.on("data", function (packet) {
         file = packet;
       });
-      //Concatonate the file parts and send the ITPResponse backet the needed information fields
-      readFile.on("close", function () {
-        //Sending the request type as 1 to indicate that the file has been found
+
+      readStream.on("close", function () {
+        // Sending the response type as 1 bc file has been found
         ITPpacket.init(
           1,
           singleton.getSequenceNumber(),
@@ -107,14 +114,12 @@ const getImage = (fileName, ext, sock) => {
           file,
           file.length
         );
-        //Calling the get packet function
+        // Write the packet to the socket and close it
         sock.write(ITPpacket.getPacket());
-        //Closing socket connection
         sock.end();
       });
     } else {
-      //If the file is not successfully read, that means it doesn't exist in the server images folder
-      //Handle by sending not-found code '2' with an empty file
+      // If file isn't read properly, send response packet with "Not found" type (2)
       ITPpacket.init(
         2,
         singleton.getSequenceNumber(),
@@ -122,9 +127,8 @@ const getImage = (fileName, ext, sock) => {
         0,
         0
       );
-      //Initiate socket connection to send empty file
+      // Write the packet to the socket and close it
       sock.write(ITPpacket.getPacket());
-      //Ending socket connection
       sock.end();
 
       console.log("\n Error in reading client file, file not found");
