@@ -9,13 +9,20 @@ module.exports = {
 
     console.log(`\nClient-${curTime} is connected at timestamp: ${curTime}`);
 
+    sock.on("error", (err) => {
+      console.log(`\nClient-${curTime} forcibly closed`);
+    });
+
     // When the socket recieves data
     sock.on("data", (reqPkt) => {
+      let version = parseBitPacket(reqPkt, 0, 4); // Should be 7
+
+      if (version !== 7) return;
+
       console.log("ITP packet received:");
       printPacketBit(reqPkt);
 
       // Getting values from the request packet
-      let version = parseBitPacket(reqPkt, 0, 4); // Should be 7
       let reqTypeInt = parseBitPacket(reqPkt, 24, 8); // Always 0
       let timestamp = parseBitPacket(reqPkt, 32, 32);
       let fileExtInt = parseBitPacket(reqPkt, 64, 4);
@@ -66,21 +73,8 @@ module.exports = {
           --Image file extension(s): ${fileExt}
           --Image file name: ${fileName}`);
 
-      // If version 7, get the image, otherwise, send response packet with "Not found" type (2)
-      if (version == 7) getImage(fileName, fileExt, sock);
-      else {
-        ITPpacket.init(
-          2,
-          singleton.getSequenceNumber(),
-          singleton.getTimestamp(),
-          0,
-          0
-        );
-
-        // Write the packet to the socket and close it
-        sock.write(ITPpacket.getPacket());
-        sock.end();
-      }
+      // Get the image
+      getImage(fileName, fileExt, sock);
     });
 
     // When the socket closes, print message
@@ -131,7 +125,6 @@ const getImage = (fileName, ext, sock) => {
       sock.write(ITPpacket.getPacket());
       sock.end();
 
-      console.log("\n Error in reading client file, file not found");
       console.log(err);
     }
   });

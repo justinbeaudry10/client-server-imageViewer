@@ -24,11 +24,6 @@ module.exports = {
       for (let i = 0; i < imgSize; i++) {
         this.payload[i] = img[i];
       }
-    } else if (resType === 2) {
-      // If not found, set payload data to 0s
-      for (let i = 0; i < imgSize; i++) {
-        this.payload[i] = 0;
-      }
     }
   },
 
